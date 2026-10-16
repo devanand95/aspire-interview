@@ -1,0 +1,9 @@
+{
+  "name": "a1-flaky-test-classifier",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A1 flaky-test classifier take-home solution",
+  "scripts": {
+    "test": "node --test"
+  }
+}
