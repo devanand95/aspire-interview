@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { classifyTest } = require("../flaky_test_classifier");
 
-const asOf = "2026-10-20T00:00:00Z";
+const asOf = "2026-10-16T00:00:00Z";
 
 function makeRuns(statuses, start = "2026-10-15T10:00:00Z") {
   const startTime = new Date(start).getTime();
@@ -98,7 +98,7 @@ test("older runs outside lookback are excluded", () => {
 test("future and invalid timestamps are ignored", () => {
   const result = classifyTest([
     ...makeRuns(["pass"]),
-    { status: "fail", timestamp: "2026-10-21T00:00:00Z" },
+    { status: "fail", timestamp: "2026-10-17T00:00:00Z" },
     { status: "fail", timestamp: "not-a-date" }
   ], { asOf });
   assert.equal(result.classification, "STABLE");
