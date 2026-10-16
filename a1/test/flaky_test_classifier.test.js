@@ -2,9 +2,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { classifyTest } = require("../flaky_test_classifier");
 
-const asOf = "2024-01-20T00:00:00Z";
+const asOf = "2026-10-20T00:00:00Z";
 
-function makeRuns(statuses, start = "2024-01-15T10:00:00Z") {
+function makeRuns(statuses, start = "2026-10-15T10:00:00Z") {
   const startTime = new Date(start).getTime();
   return statuses.map((status, index) => ({
     status,
@@ -88,7 +88,7 @@ test("timeout can be configured as a failure", () => {
 });
 
 test("older runs outside lookback are excluded", () => {
-  const oldRuns = makeRuns(["fail"], "2023-12-01T10:00:00Z");
+  const oldRuns = makeRuns(["fail"], "2026-09-01T10:00:00Z");
   const recentRuns = makeRuns(["pass"]);
   const result = classifyTest([...oldRuns, ...recentRuns], { asOf, lookbackDays: 7 });
   assert.equal(result.classification, "STABLE");
@@ -98,7 +98,7 @@ test("older runs outside lookback are excluded", () => {
 test("future and invalid timestamps are ignored", () => {
   const result = classifyTest([
     ...makeRuns(["pass"]),
-    { status: "fail", timestamp: "2024-01-21T00:00:00Z" },
+    { status: "fail", timestamp: "2026-10-21T00:00:00Z" },
     { status: "fail", timestamp: "not-a-date" }
   ], { asOf });
   assert.equal(result.classification, "STABLE");
@@ -111,7 +111,7 @@ test("missing timestamps and malformed records are ignored", () => {
     { status: "pass" },
     null,
     "bad record",
-    { status: "pass", timestamp: "2024-01-15T10:00:00Z" }
+    { status: "pass", timestamp: "2026-10-15T10:00:00Z" }
   ], { asOf });
   assert.equal(result.classification, "STABLE");
   assert.equal(result.counts.validRuns, 1);
@@ -162,7 +162,7 @@ test("skipped run after failures does not break the valid failure streak", () =>
 });
 
 test("history is capped at the latest configured number of runs", () => {
-  const result = classifyTest(makeRuns([...Array(50).fill("pass"), "fail"], "2024-01-15T10:00:00Z"), { asOf, maxHistory: 10 });
+  const result = classifyTest(makeRuns([...Array(50).fill("pass"), "fail"], "2026-10-15T10:00:00Z"), { asOf, maxHistory: 10 });
   assert.equal(result.counts.validRuns, 10);
   assert.equal(result.counts.passes, 9);
   assert.equal(result.counts.failures, 1);
