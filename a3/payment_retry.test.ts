@@ -24,11 +24,6 @@ import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
  *   mockPaymentProvider.calls         [{ id, amount, idempotencyKey }], one entry per call
  *   mockNotifier.callCount, mockNotifier.calls [{ paymentId }], one entry per notification
  *   getPaymentStatus(id)               stored status, readable while retries are still running
- *
- * Priority (run the money-safety subset first: npx jest -t "P0"):
- * P0: double charge, charged-then-"failed", over-retrying the issuer: #1 #4 #5 #7 #8 #11 #12
- * P1: spec behaviour and wrong terminal states: #2 #3 #6 #9 #10
- * P2: hardening that needs spec input: #13
  */
 
 const RETRY_DELAY_MS = 5000;
@@ -174,7 +169,7 @@ describe("payment retry", () => {
       expect((await pending).status).toBe("failed");
     });
 
-    it("[P0 #8] a reattempt forced inside the 5s window is not honored", async () => {
+    it("[P0 #8] re-submitting the same payment during the 5s retry wait does not trigger another provider call", async () => {
       mockPaymentProvider.failTimes(1);
       const pending = track(processPayment({ id: "p8", amount: 100 }));
       await jest.advanceTimersByTimeAsync(0);
@@ -213,7 +208,7 @@ describe("payment retry", () => {
       expect(mockPaymentProvider.callCount).toBe(2);
     });
 
-    it("[P1 #9] unreached on every call ends errored, never failed, owner notified once", async () => {
+    it("[P1 #10] unreached on every call ends errored, never failed, owner notified once", async () => {
       mockPaymentProvider.script(Array(TOTAL_CALLS).fill("unreachable"));
       const result = await settled(processPayment({ id: "p10", amount: 100 }));
       expect(result.status).toBe("errored");
@@ -222,7 +217,7 @@ describe("payment retry", () => {
       await expectNoFurtherCalls(TOTAL_CALLS);
     });
 
-    it("[P1 #10] unreached on a retry after a decline is not a failure", async () => {
+    it("[P1 #11] unreached on a retry after a decline is not a failure", async () => {
       mockPaymentProvider.script(["decline", "unreachable", "success"]);
       const pending = track(processPayment({ id: "p11", amount: 100 }));
 
@@ -237,7 +232,7 @@ describe("payment retry", () => {
       expect(mockPaymentProvider.callCount).toBe(3);
     });
 
-    it("[P1 #10] three declines then an unreached final retry ends errored, not failed", async () => {
+    it("[P1 #12] three declines then an unreached final retry ends errored, not failed", async () => {
       mockPaymentProvider.script(["decline", "decline", "decline", "unreachable"]);
       const result = await settled(processPayment({ id: "p12", amount: 100 }));
       expect(result.status).toBe("errored"); // the final call was not a decline
@@ -245,7 +240,7 @@ describe("payment retry", () => {
       expect(mockNotifier.callCount).toBe(1);
     });
 
-    it("[P0 #11] no response on call #1: not failed, and the resend reuses the same idempotency key", async () => {
+    it("[P0 #13] no response on call #1: not failed, and the resend reuses the same idempotency key", async () => {
       mockPaymentProvider.script(["no-response", "success"]);
       const pending = track(processPayment({ id: "p13", amount: 100 }));
 
@@ -262,7 +257,7 @@ describe("payment retry", () => {
       expect(second.idempotencyKey).toBe(first.idempotencyKey);
     });
 
-    it("[P0 #11] no response on every call ends errored, never failed, one key throughout", async () => {
+    it("[P0 #14] no response on every call ends errored, never failed, one key throughout", async () => {
       mockPaymentProvider.script(Array(TOTAL_CALLS).fill("no-response"));
       const result = await settled(processPayment({ id: "p14", amount: 100 }));
       expect(result.status).toBe("errored");
@@ -275,7 +270,7 @@ describe("payment retry", () => {
   });
 
   describe("integrity", () => {
-    it("[P0 #12] every call carries the same payment: id, amount and idempotency key", async () => {
+    it("[P0 #15] every call carries the same payment: id, amount and idempotency key", async () => {
       mockPaymentProvider.failTimes(MAX_RETRIES);
       await settled(processPayment({ id: "p15", amount: 100 }));
 
@@ -290,7 +285,7 @@ describe("payment retry", () => {
     });
 
     // Enable once the spec says which inputs are invalid (amount <= 0? empty id?).
-    it.skip("[P2 #13] input rejected before the provider is never failed and never notifies", async () => {
+    it.skip("[P2 #16] input rejected before the provider is never failed and never notifies", async () => {
       let status: string | undefined;
       try {
         status = (await settled(processPayment({ id: "p16", amount: -5 }))).status;
@@ -303,8 +298,6 @@ describe("payment retry", () => {
     });
   });
 
-  // Parked until the mocks can express them.
-  it.todo("[P1] concurrent payments keep independent retry counters (failTimes looks global)");
-  it.todo("[P1] failed / completed / errored are persisted, not only returned");
-  it.todo("[P1] hard declines (stolen card, fraud flag): spec retries every failure, decide whether these should skip retries");
+  // Parked: needs a per-payment mock script to verify independent retry counters.
+  it.todo("[P1] concurrent payments keep independent retry counters");
 });
