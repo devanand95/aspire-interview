@@ -56,6 +56,6 @@ Priorities reflect assumed business impact, not just the presence of an assertio
 
 ## What I would ship first, and what remains exposed
 
-Before release, I would prioritize the core payment contract and duplicate-payment risks: **#1, #4, #5, and #6**, followed by **#8 and #13–#15** for duplicate submissions, idempotency, and uncertain provider outcomes. Although #5 is rated P1 by relative business impact, the retry cap is explicitly required by the spec, so I would still verify it before release.
+Before release, I would prioritize the core payment contract and duplicate-payment risks: **#1, #4, #5, and #6**, followed by **#8 and #13–#15** for duplicate submissions, idempotency, and uncertain provider outcomes. 
 
-If time is limited, I would knowingly leave lower-priority gaps around the exact retry-delay boundary (**#7**), success specifically on retries one and two (**#2–#3**), and combinations of unreachable-provider and mixed outcomes (**#9–#12**) for the next iteration. That leaves some risk of defects in intermediate retry paths and transport-error handling; it does not remove the need to run at least the required-contract checks before shipping. **#16** stays skipped until the product contract defines invalid-input behavior.
+If time is limited, I would knowingly leave lower-priority gaps around the exact retry-delay boundary (**#7**), success specifically on retries one and two (**#2–#3**), and combinations of unreachable-provider and mixed outcomes (**#9–#12**) for the next iteration. That leaves some risk of defects in intermediate retry paths but the user will not face with irreversible impact, although it might be a bad experience
