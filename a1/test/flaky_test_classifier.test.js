@@ -1,3 +1,33 @@
+/*
+ * Coverage review — qualitative assessment, not a measured line/branch coverage report.
+ *
+ * Area                         Rating       Assessment
+ * ---------------------------  -----------  -----------------------------------------------
+ * Classification / stability   9/10         Covers STABLE, FLAKY, and CONSISTENTLY_FAILING.
+ * Confidence                   8/10         Covers LOW, MEDIUM, and HIGH run-count bands.
+ * Trend detection              8/10         Covers improving, deteriorating, unchanged, and
+ *                                           insufficient-history cases.
+ * Input validation / filtering 8/10         Covers ignored statuses, malformed records, and
+ *                                           invalid, future, or out-of-window timestamps.
+ * Recent failure streak        7/10         Covers the default three-failure streak and an
+ *                                           ignored skipped run within the streak.
+ * History cap / ordering       7/10         Covers maxHistory; shuffled-input behavior could
+ *                                           be asserted explicitly.
+ * Configuration validation     6/10         Checks several invalid options; custom valid
+ *                                           configurations and more boundaries need tests.
+ * Real CI integration          Not covered  These are unit tests; CI adapters and real result
+ *                                           payloads are not exercised here.
+ *
+ * Highest-value follow-up tests (not yet explicitly covered):
+ * - Trend changes just below, exactly at, and just above +/- trendChangeThreshold.
+ * - A timestamp exactly at the lookback cutoff and one just outside it.
+ * - Identical timestamped history supplied in different input orders.
+ * - Custom valid configuration values, including failureStreakLength and confidenceBands.
+ * - Supported status aliases and uppercase/mixed-case statuses.
+ *
+ * Ratings are reviewer judgment, not percentages or test-runner coverage numbers.
+ */
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { classifyTest } = require("../flaky_test_classifier");
