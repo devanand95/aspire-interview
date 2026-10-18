@@ -27,7 +27,7 @@ You can also run the tests directly with `node --test`.
 - **Recent failures:** the configured consecutive-failure streak, excluding non-evaluable runs.
 - **History and input validation:** `maxHistory`, invalid input, invalid reference date, and invalid configuration.
 
-A qualitative coverage-review table and prioritized follow-up test ideas are documented as a block comment at the top of `test/flaky_test_classifier.test.js`. Its ratings are reviewer judgment; they are not measured line or branch coverage.
+A per-test expected-output matrix is included as a block comment at the top of `test/flaky_test_classifier.test.js`. It maps each scenario to the returned `classification`, `confidence`, and `trend.classification`. Some table cells are inferred from the implementation where the corresponding test does not assert that specific field.
 
 ## Classification rules and defaults
 
@@ -44,6 +44,6 @@ A qualitative coverage-review table and prioritized follow-up test ideas are doc
 
 ## Assumptions and limitations
 
-The classifier cannot infer the cause of a generic failure. It can distinguish infrastructure failures from test failures only when the input provides a distinct status. The `asOf` option makes lookback behavior reproducible for tests and historical analysis.
+The classifier cannot infer the cause of a generic failure. It can distinguish infrastructure failures from test failures only when the input provides a distinct status. The `asOf` option makes lookback behavior reproducible in tests and historical analysis.
 
 The tests validate the classifier's unit-level behavior; they do not verify integration with a particular CI provider or production execution-history pipeline.
