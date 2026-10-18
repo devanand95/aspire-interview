@@ -2,52 +2,7 @@ import { processPayment, getPaymentStatus } from "../src/payments"; // assumed p
 import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
 
 /**
- * Assumptions
- * A1: Maximum 4 provider calls (call #1 + retries #1-#3), 5s between calls.
- * A2: A "decline" is an explicit rejection from the provider. Only an explicit final decline maps to "failed"; a timeout is not a decline.
- * A3: "Unreachable" means the connection failed before the provider received the request. "No-response"
- *     (timeout) means the request may have been processed but the response did not arrive, so the outcome is
- *     unknown. Both consume a retry slot here. If the final call is not an explicit decline, return "errored"
- *     (not "failed") and notify the owner once; confirm this policy against the actual product contract.
- * A4: A refused re-trigger resolves with the current in-flight state, without an error.
- * A5: "Notify" means notify the business owner.
- *
- * Mock surface
- * Already in the suite:
- *   mockPaymentProvider.failTimes(n)  first n calls are declined; later calls succeed
- *   mockPaymentProvider.callCount     every call the code makes to the provider, including unreached ones
- *   mockNotifier.wasCalled()          owner notified at least once
- * To add:
- *   mockPaymentProvider.reset(), mockNotifier.reset()
- *   mockPaymentProvider.script([...]) per-call outcomes; calls after the script succeed:
- *                                      "decline" | "unreachable" | "no-response" | "success"
- *                                      unreachable -> throws ECONNREFUSED; provider never saw the request
- *                                      no-response -> throws ETIMEDOUT; provider may have charged
- *   mockPaymentProvider.calls         [{ id, amount, idempotencyKey }], one entry per call
- *   mockNotifier.callCount, mockNotifier.calls [{ paymentId }], one entry per notification
- *   getPaymentStatus(id)               stored status, readable while retries are still running
-
- *
- * Priority rationale (business impact)
- * P0 is for cases that could break the payment flow, leave money in the wrong state, or risk a
- * duplicate charge. P1 covers important behavior where the direct financial risk is lower.
- * The timeout/idempotency and duplicate-submission cases add assumptions beyond the short spec,
- * so those expectations should be confirmed with the product owner.
- *
- * | Test | Priority | Scenario                      | Business impact |
- * |------|----------|-------------------------------|-----------------|
- * | #1   | P0       | Initial success               | If a valid payment cannot complete on the first try, the main payment flow is broken. |
- * | #5   | P1       | Exhausted retries             | The retry cap must be respected, but one extra call after explicit declines is usually less directly harmful than an incorrect payment state or a duplicate charge. |
- * | #7   | P1       | Retry timing                  | The 5-second interval is part of the spec, but an isolated timing deviation usually affects delay or provider load rather than payment correctness. |
- * | #4   | P0       | Success on final retry        | If a successful payment is marked failed, the business may treat it as unpaid and try to collect again. |
- * | #13  | P0       | Timeout, then retry succeeds  | A missing response does not prove the first request failed; reusing the same key helps avoid a second charge. |
- * | #14  | P0       | All attempts time out         | The outcome is unknown, not necessarily failed. The business needs an explicit alert and reconciliation rather than a misleading final status. |
- * | #15  | P0       | Payment identity/idempotency | Every retry must refer to the same payment and amount; changing the details or key can duplicate or alter the transaction. |
- * | #8   | P0       | Duplicate submission in wait  | A second processing chain for the same payment could submit it again and charge the customer twice. |
- * | #6   | P0       | Notify only after final decline | Once sent, a premature alert cannot be recalled and may prompt unnecessary manual action even if the payment later succeeds. |
- *
- * A P0 label means a failure could directly compromise payment correctness or integrity; P1 means
- * the behavior still matters but has lower direct impact when considered on its own.
+ * Assumptions, mock contract, and priority rationale are documented in ./README.md.
  */
 
 const RETRY_DELAY_MS = 5000;
