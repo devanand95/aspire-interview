@@ -23,8 +23,8 @@ npm test
 
 Requires Node.js 18 or later. No third-party package installation is required.
 
-### Coverage overview
+### Test output map
 
-The A1 tests cover the core classifications (`STABLE`, `FLAKY`, and `CONSISTENTLY_FAILING`), confidence bands, ignored or invalid execution records, trend detection, recent failure streaks, history limits, and input/configuration validation.
+The [A1 test file](./a1/test/flaky_test_classifier.test.js) begins with a table mapping each test scenario to its expected `classification`, `confidence`, and `trend.classification`. Some values are inferred from the implementation when the test does not assert that field directly.
 
-A qualitative coverage review and prioritized follow-up test ideas are recorded as a comment at the top of [the A1 test file](./a1/test/flaky_test_classifier.test.js). These ratings are reviewer judgment, not measured line or branch coverage. The tests are unit tests and do not currently exercise integration with a real CI provider.
+The suite also exercises ignored or invalid execution records, recent failure streaks, history limits, and input/configuration validation. These are unit tests and do not currently exercise integration with a real CI provider.
