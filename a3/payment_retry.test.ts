@@ -4,9 +4,11 @@ import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
 /**
  * Assumptions
  * A1: Maximum 4 provider calls (call #1 + retries #1-#3), 5s between calls.
- * A2: "Attempted" = the provider received the request and answered; failed = final attempt explicitly declined.
- * A3: Unreached / no-response calls count toward the retry cap. If the final call was not a decline, the
- *     payment ends as errored (never failed) and the owner is notified once.
+ * A2: A "decline" is an explicit rejection from the provider. Only an explicit final decline maps to "failed"; a timeout is not a decline.
+ * A3: "Unreachable" means the connection failed before the provider received the request. "No-response"
+ *     (timeout) means the request may have been processed but the response did not arrive, so the outcome is
+ *     unknown. Both consume a retry slot here. If the final call is not an explicit decline, return "errored"
+ *     (not "failed") and notify the owner once; confirm this policy against the actual product contract.
  * A4: A refused re-trigger resolves with the current in-flight state, without an error.
  * A5: "Notify" means notify the business owner.
  *
