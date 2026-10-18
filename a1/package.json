@@ -2,8 +2,12 @@
   "name": "a1-flaky-test-classifier",
   "version": "1.0.0",
   "private": true,
-  "description": "A1 flaky-test classifier take-home solution",
+  "description": "Dependency-free A1 flaky-test classifier and unit tests",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:classifier": "node --test test/flaky_test_classifier.test.js"
   }
 }
