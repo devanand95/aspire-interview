@@ -1,31 +1,43 @@
 /*
- * Coverage review — qualitative assessment, not a measured line/branch coverage report.
+ * Expected-output table for the tests below.
+ * Columns correspond to classifyTest()'s classification, confidence, and trend.classification.
+ * Cells not directly asserted by a test are inferred from the current implementation.
  *
- * Area                         Rating       Assessment
- * ---------------------------  -----------  -----------------------------------------------
- * Classification / stability   9/10         Covers STABLE, FLAKY, and CONSISTENTLY_FAILING.
- * Confidence                   8/10         Covers LOW, MEDIUM, and HIGH run-count bands.
- * Trend detection              8/10         Covers improving, deteriorating, unchanged, and
- *                                           insufficient-history cases.
- * Input validation / filtering 8/10         Covers ignored statuses, malformed records, and
- *                                           invalid, future, or out-of-window timestamps.
- * Recent failure streak        7/10         Covers the default three-failure streak and an
- *                                           ignored skipped run within the streak.
- * History cap / ordering       7/10         Covers maxHistory; shuffled-input behavior could
- *                                           be asserted explicitly.
- * Configuration validation     6/10         Checks several invalid options; custom valid
- *                                           configurations and more boundaries need tests.
- * Real CI integration          Not covered  These are unit tests; CI adapters and real result
- *                                           payloads are not exercised here.
+ * | Test | Scenario                                       | Classification         | Confidence | Trend                  |
+ * |------|------------------------------------------------|------------------------|------------|------------------------|
+ * | 1    | Three passing runs                             | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 2    | Three failing runs                             | CONSISTENTLY_FAILING   | LOW        | INSUFFICIENT_HISTORY   |
+ * | 3    | Mixed pass/fail runs                           | FLAKY                  | LOW        | INSUFFICIENT_HISTORY   |
+ * | 4    | One passing run                                | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 5    | One failing run                                | CONSISTENTLY_FAILING   | LOW        | INSUFFICIENT_HISTORY   |
+ * | 6a   | Four passing runs                              | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 6b   | Five passing runs                              | STABLE                 | MEDIUM     | INSUFFICIENT_HISTORY   |
+ * | 6c   | Ten passing runs                               | STABLE                 | HIGH       | NO_CLEAR_CHANGE        |
+ * | 7    | Empty history                                  | null                   | NONE       | INSUFFICIENT_HISTORY   |
+ * | 8    | Passes with skipped and aborted runs           | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 9    | All statuses non-evaluable                     | null                   | NONE       | INSUFFICIENT_HISTORY   |
+ * | 10   | Pass, unknown status, fail                     | FLAKY                  | LOW        | INSUFFICIENT_HISTORY   |
+ * | 11   | Timeout ignored by default                     | FLAKY                  | LOW        | INSUFFICIENT_HISTORY   |
+ * | 12   | Timeout treated as failure                      | FLAKY                  | LOW        | INSUFFICIENT_HISTORY   |
+ * | 13   | Old failure excluded by lookback                | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 14   | Future/invalid timestamp records ignored        | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 15   | Missing timestamps/malformed records ignored    | STABLE                 | LOW        | INSUFFICIENT_HISTORY   |
+ * | 16   | Passes followed by failures                     | FLAKY                  | MEDIUM     | DETERIORATING          |
+ * | 17   | Failures followed by passes                     | FLAKY                  | MEDIUM     | IMPROVING              |
+ * | 18a  | Six passing runs                               | STABLE                 | MEDIUM     | NO_CLEAR_CHANGE        |
+ * | 18b  | Six failing runs                               | CONSISTENTLY_FAILING   | MEDIUM     | NO_CLEAR_CHANGE        |
+ * | 19   | Mixed history, failure-rate change < threshold | FLAKY                  | MEDIUM     | NO_CLEAR_CHANGE        |
+ * | 20   | Four mixed runs; insufficient trend history     | FLAKY                  | LOW        | INSUFFICIENT_HISTORY   |
+ * | 21   | Skips/aborts excluded from trend windows        | FLAKY                  | MEDIUM     | IMPROVING              |
+ * | 22   | Pass followed by three failures                 | FLAKY                  | LOW        | INSUFFICIENT_HISTORY   |
+ * | 23   | Three failures with a skipped run between       | CONSISTENTLY_FAILING   | LOW        | INSUFFICIENT_HISTORY   |
+ * | 24   | Latest ten of 51 runs: nine passes, one failure | FLAKY                  | HIGH       | NO_CLEAR_CHANGE        |
+ * | 25   | Non-array input                                | throws                 | N/A        | N/A                    |
+ * | 26   | Invalid reference date                         | throws                 | N/A        | N/A                    |
+ * | 27   | Invalid configuration                           | throws                 | N/A        | N/A                    |
  *
- * Highest-value follow-up tests (not yet explicitly covered):
- * - Trend changes just below, exactly at, and just above +/- trendChangeThreshold.
- * - A timestamp exactly at the lookback cutoff and one just outside it.
- * - Identical timestamped history supplied in different input orders.
- * - Custom valid configuration values, including failureStreakLength and confidenceBands.
- * - Supported status aliases and uppercase/mixed-case statuses.
- *
- * Ratings are reviewer judgment, not percentages or test-runner coverage numbers.
+ * Note: recentFailureStreak, counts, and warnings are separate return fields and are not
+ * represented in this three-column classification/confidence/trend view.
  */
 
 const test = require("node:test");
