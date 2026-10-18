@@ -35,7 +35,7 @@ import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
  * | Test | Priority | Scenario                      | Business impact |
  * |------|----------|-------------------------------|-----------------|
  * | #1   | P0       | Initial success               | If a valid payment cannot complete on the first try, the main payment flow is broken. |
- * | #5   | P0       | Exhausted retries             | Retrying beyond the limit can overload the provider; the final state must also reflect the last declined attempt. |
+ * | #5   | P1       | Exhausted retries             | The retry cap must be respected, but one extra call after explicit declines is usually less directly harmful than an incorrect payment state or a duplicate charge. |
  * | #7   | P1       | Retry timing                  | The 5-second interval is part of the spec, but an isolated timing deviation usually affects delay or provider load rather than payment correctness. |
  * | #4   | P0       | Success on final retry        | If a successful payment is marked failed, the business may treat it as unpaid and try to collect again. |
  * | #13  | P0       | Timeout, then retry succeeds  | A missing response does not prove the first request failed; reusing the same key helps avoid a second charge. |
@@ -146,7 +146,7 @@ describe("payment retry", () => {
   });
 
   describe("exhaustion and owner notification", () => {
-    it("[P0 #5] marks failed after call #4 is declined: exactly 3 retries, no call #5", async () => {
+    it("[P1 #5] marks failed after call #4 is declined: exactly 3 retries, no call #5", async () => {
       mockPaymentProvider.failTimes(TOTAL_CALLS + 1); // a 5th call would also decline, so over-retrying shows in callCount
       const result = await settled(processPayment({ id: "p5", amount: 100 }));
       expect(result.status).toBe("failed");
