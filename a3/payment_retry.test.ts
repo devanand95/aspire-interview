@@ -149,7 +149,7 @@ describe("payment retry", () => {
   });
 
   describe("timing", () => {
-    it("[P0 #7] waits exactly 5s between calls: first call immediate, no retry early, no wait after the last", async () => {
+    it("[P1 #7] waits exactly 5s between calls: first call immediate, no retry early, no wait after the last", async () => {
       mockPaymentProvider.failTimes(TOTAL_CALLS + 1);
       const pending = track(processPayment({ id: "p7", amount: 100 }));
       let finished = false;
