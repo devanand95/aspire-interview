@@ -27,23 +27,25 @@ import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
 
  *
  * Priority rationale (business impact)
- * Priorities are based on the assumed payment-integrity risk; confirm the added idempotency,
- * duplicate-submission, and "errored" behaviors against the product contract.
+ * P0 is for cases that could break the payment flow, leave money in the wrong state, or risk a
+ * duplicate charge. P1 covers important behavior where the direct financial risk is lower.
+ * The timeout/idempotency and duplicate-submission cases add assumptions beyond the short spec,
+ * so those expectations should be confirmed with the product owner.
  *
- * | Test | Priority | Scenario                         | Business impact / justification |
- * |------|----------|----------------------------------|---------------------------------|
- * | #1   | P0       | Initial success                  | Core payment flow must complete valid payments correctly; failures block normal payment processing. |
- * | #5   | P0       | Exhausted retries                | Prevents attempts beyond the configured cap and incorrect terminal-state handling after repeated declines. |
- * | #7   | P1       | Retry timing                    | Timing must follow the 5-second requirement, but a timing deviation alone is generally less severe than a duplicate charge or incorrect payment state. |
- * | #4   | P0       | Success on final retry           | Avoids marking a successfully processed payment as failed, which could lead to mistaken follow-up or another payment attempt. |
- * | #13  | P0       | Timeout, then retry succeeds     | The provider may have processed the first request despite no response; reusing the idempotency key helps prevent a duplicate charge. |
- * | #14  | P0       | All attempts time out            | Payment outcome remains uncertain; incorrect definitive failure handling can trigger duplicate payments or reconciliation issues. |
- * | #15  | P0       | Payment identity/idempotency     | Keeps payment ID, amount, and idempotency key consistent to avoid changed or duplicate transactions across retries. |
- * | #8   | P0       | Duplicate submission in wait     | Prevents the same payment from spawning a second processing/retry chain and potentially charging the customer twice. |
- * 
- * P0 = critical payment correctness/integrity risk. P1 = important requirement with comparatively
- * lower direct financial impact if isolated. P0 labels for timeout/idempotency/duplicate-submission
- * cases are risk-based additions beyond the minimal retry spec, not explicitly mandated by it.
+ * | Test | Priority | Scenario                      | Business impact |
+ * |------|----------|-------------------------------|-----------------|
+ * | #1   | P0       | Initial success               | If a valid payment cannot complete on the first try, the main payment flow is broken. |
+ * | #5   | P0       | Exhausted retries             | Retrying beyond the limit can overload the provider; the final state must also reflect the last declined attempt. |
+ * | #7   | P1       | Retry timing                  | The 5-second interval is part of the spec, but an isolated timing deviation usually affects delay or provider load rather than payment correctness. |
+ * | #4   | P0       | Success on final retry        | If a successful payment is marked failed, the business may treat it as unpaid and try to collect again. |
+ * | #13  | P0       | Timeout, then retry succeeds  | A missing response does not prove the first request failed; reusing the same key helps avoid a second charge. |
+ * | #14  | P0       | All attempts time out         | The outcome is unknown, not necessarily failed. The business needs an explicit alert and reconciliation rather than a misleading final status. |
+ * | #15  | P0       | Payment identity/idempotency | Every retry must refer to the same payment and amount; changing the details or key can duplicate or alter the transaction. |
+ * | #8   | P0       | Duplicate submission in wait  | A second processing chain for the same payment could submit it again and charge the customer twice. |
+ * | #6   | P1       | Notify only after final decline | A premature alert can worry the owner even if a later retry succeeds. It cannot be taken back, but on its own it does not change the payment state; keep it P1 unless it triggers high-impact downstream action. |
+ *
+ * A P0 label means a failure could directly compromise payment correctness or integrity; P1 means
+ * the behavior still matters but has lower direct impact when considered on its own.
  */
 
 const RETRY_DELAY_MS = 5000;
