@@ -24,6 +24,26 @@ import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
  *   mockPaymentProvider.calls         [{ id, amount, idempotencyKey }], one entry per call
  *   mockNotifier.callCount, mockNotifier.calls [{ paymentId }], one entry per notification
  *   getPaymentStatus(id)               stored status, readable while retries are still running
+
+ *
+ * Priority rationale (business impact)
+ * Priorities are based on the assumed payment-integrity risk; confirm the added idempotency,
+ * duplicate-submission, and "errored" behaviors against the product contract.
+ *
+ * | Test | Priority | Scenario                         | Business impact / justification |
+ * |------|----------|----------------------------------|---------------------------------|
+ * | #1   | P0       | Initial success                  | Core payment flow must complete valid payments correctly; failures block normal payment processing. |
+ * | #5   | P0       | Exhausted retries                | Prevents attempts beyond the configured cap and incorrect terminal-state handling after repeated declines. |
+ * | #7   | P1       | Retry timing                    | Timing must follow the 5-second requirement, but a timing deviation alone is generally less severe than a duplicate charge or incorrect payment state. |
+ * | #4   | P0       | Success on final retry           | Avoids marking a successfully processed payment as failed, which could lead to mistaken follow-up or another payment attempt. |
+ * | #13  | P0       | Timeout, then retry succeeds     | The provider may have processed the first request despite no response; reusing the idempotency key helps prevent a duplicate charge. |
+ * | #14  | P0       | All attempts time out            | Payment outcome remains uncertain; incorrect definitive failure handling can trigger duplicate payments or reconciliation issues. |
+ * | #15  | P0       | Payment identity/idempotency     | Keeps payment ID, amount, and idempotency key consistent to avoid changed or duplicate transactions across retries. |
+ * | #8   | P0       | Duplicate submission in wait     | Prevents the same payment from spawning a second processing/retry chain and potentially charging the customer twice. |
+ * 
+ * P0 = critical payment correctness/integrity risk. P1 = important requirement with comparatively
+ * lower direct financial impact if isolated. P0 labels for timeout/idempotency/duplicate-submission
+ * cases are risk-based additions beyond the minimal retry spec, not explicitly mandated by it.
  */
 
 const RETRY_DELAY_MS = 5000;
