@@ -42,7 +42,7 @@ import { mockPaymentProvider, mockNotifier } from "./mocks"; // assumed paths
  * | #14  | P0       | All attempts time out         | The outcome is unknown, not necessarily failed. The business needs an explicit alert and reconciliation rather than a misleading final status. |
  * | #15  | P0       | Payment identity/idempotency | Every retry must refer to the same payment and amount; changing the details or key can duplicate or alter the transaction. |
  * | #8   | P0       | Duplicate submission in wait  | A second processing chain for the same payment could submit it again and charge the customer twice. |
- * | #6   | P1       | Notify only after final decline | A premature alert can worry the owner even if a later retry succeeds. It cannot be taken back, but on its own it does not change the payment state; keep it P1 unless it triggers high-impact downstream action. |
+ * | #6   | P0       | Notify only after final decline | Once sent, a premature alert cannot be recalled and may prompt unnecessary manual action even if the payment later succeeds. |
  *
  * A P0 label means a failure could directly compromise payment correctness or integrity; P1 means
  * the behavior still matters but has lower direct impact when considered on its own.
@@ -154,7 +154,7 @@ describe("payment retry", () => {
       await expectNoFurtherCalls(TOTAL_CALLS);
     });
 
-    it("[P1 #6] notifies the owner exactly once, only after the final decline", async () => {
+    it("[P0 #6] notifies the owner exactly once, only after the final decline", async () => {
       mockPaymentProvider.failTimes(TOTAL_CALLS + 1);
       const pending = track(processPayment({ id: "p6", amount: 100 }));
 
